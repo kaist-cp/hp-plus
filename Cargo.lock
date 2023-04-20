@@ -282,6 +282,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "hp-plus-benchmark"
+version = "0.1.0"
+dependencies = [
+ "bitflags",
+ "cdrc-rs",
+ "cfg-if 1.0.0",
+ "clap",
+ "crossbeam-epoch 0.9.13",
+ "crossbeam-pebr-epoch",
+ "crossbeam-utils 0.8.14",
+ "csv",
+ "hp_pp",
+ "jemalloc-ctl",
+ "jemallocator",
+ "nbr-rs",
+ "rand",
+ "scopeguard",
+ "typenum",
+]
+
+[[package]]
 name = "hp_pp"
 version = "0.1.0"
 dependencies = [
@@ -487,27 +508,6 @@ name = "paste"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d01a5bd0424d00070b0098dd17ebca6f961a959dead1dbcbbbc1d1cd8d3deeba"
-
-[[package]]
-name = "pebr-benchmark"
-version = "0.1.0"
-dependencies = [
- "bitflags",
- "cdrc-rs",
- "cfg-if 1.0.0",
- "clap",
- "crossbeam-epoch 0.9.13",
- "crossbeam-pebr-epoch",
- "crossbeam-utils 0.8.14",
- "csv",
- "hp_pp",
- "jemalloc-ctl",
- "jemallocator",
- "nbr-rs",
- "rand",
- "scopeguard",
- "typenum",
-]
 
 [[package]]
 name = "peeking_take_while"
