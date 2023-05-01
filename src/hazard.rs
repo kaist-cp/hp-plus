@@ -282,7 +282,7 @@ impl<'domain> Iterator for ThreadHazardArrayIter<'domain> {
             let slot = unsafe { array.get_unchecked(i) };
             let value = slot.load(Ordering::Acquire);
             if !value.is_null() {
-                return Some(value)
+                return Some(value);
             }
         }
         None
