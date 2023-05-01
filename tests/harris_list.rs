@@ -3,7 +3,8 @@
 #![feature(strict_provenance_atomic_ptr)]
 use std::{
     mem, ptr, slice,
-    sync::atomic::{AtomicPtr, Ordering}, thread::scope,
+    sync::atomic::{AtomicPtr, Ordering},
+    thread::scope,
 };
 
 use hp_pp::*;
@@ -60,7 +61,7 @@ pub struct Cursor<'domain, 'hp, K, V> {
     curr: *mut Node<K, V>,
     /// An optional variable that contains a value if
     /// and only if `prev` is logically deleted.
-    /// 
+    ///
     /// If it is the case, anchor contains a pair of
     /// the last logically undeleted node during traversal
     /// and its next node, which are then used to
@@ -303,7 +304,11 @@ where
     }
 
     #[inline]
-    pub fn remove<'domain, 'hp>(&self, key: &K, handle: &'hp mut Handle<'domain>) -> Option<&'hp V> {
+    pub fn remove<'domain, 'hp>(
+        &self,
+        key: &K,
+        handle: &'hp mut Handle<'domain>,
+    ) -> Option<&'hp V> {
         loop {
             match self.remove_inner(key, handle.launder()) {
                 Ok(r) => return r,
