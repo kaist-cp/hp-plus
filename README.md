@@ -16,9 +16,11 @@ We design **HP++, a backward-compatible extension for HP** to improve applicabil
 
 You can check the actual implementation of [Harris's list](https://www.cl.cam.ac.uk/research/srg/netos/papers/2001-caslists.pdf) in [tests/harris_list.rs](tests/harris_list.rs).
 
-This crate provides two major APIs: **TryProtect** and **TryUnlink**.
+This crate provides two major APIs: `try_protect_pp` and `try_unlink`, corresponding to **TryProtect** and **TryUnlink** in the original paper, respectively.
 
-### TryProtect
+(`.._pp`, which stands for *plus-plus*, is used in `try_protect_pp` to distinguish with `try_protect` function that provides HP version of protecting.)
+
+### `try_protect_pp`
 
 ```rust
 pub fn try_protect_pp<T, S, F>(
@@ -43,7 +45,7 @@ It takes 4 arguments (except the `HazardPointer` to protect with):
 
 If `src` is invalidated, `try_protect_pp` returns `false` meaning that it is unsafe to create new protection from `src`. Otherwise, it returns `true`, but if `src_link` has changed from `ptr`, then the new value is written to `ptr`.
 
-### TryUnlink
+### `try_unlink`
 
 ```rust
 pub unsafe fn try_unlink<T>(
