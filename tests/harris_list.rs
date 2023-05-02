@@ -9,6 +9,9 @@ use std::{
 
 use hp_pp::*;
 
+// `#[repr(C)]` is used to ensure the first field
+// is also the first data in the memory alignment.
+#[repr(C)]
 pub struct Node<K, V> {
     /// tag 1: logically deleted, tag 2: stopped
     next: AtomicPtr<Node<K, V>>,
