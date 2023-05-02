@@ -13,7 +13,7 @@ use hp_pp::*;
 // is also the first data in the memory alignment.
 #[repr(C)]
 pub struct Node<K, V> {
-    /// tag 1: logically deleted, tag 2: stopped
+    /// tag 1: logically deleted, tag 2: invalidated
     next: AtomicPtr<Node<K, V>>,
     key: K,
     value: V,

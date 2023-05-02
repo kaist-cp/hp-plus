@@ -8,7 +8,7 @@ The benchmark suite which evaluates the performance of HP++ can be found at [smr
 
 ## Introduction
 
-**HP++ is a backward-compatible extension for HP**, which improve applicability by enabling optimistic traversal. The key idea is *under-approximating* the unreachability in validation to allow *optimistic traversal* by letting the deleter mark the node *after* detaching, and *patching up* the potentially unsafe accesses arising from false-negatives by letting the deleter protect such pointers. Thanks to optimistic traversal, data structures with HP++ outperform the same-purpose data structures with HP under contention while consuming a similar amount of memory.
+**HP++ is a backward-compatible extension for hazard pointers (HP)**, which improve applicability by enabling optimistic traversal. The key idea is *under-approximating* the unreachability in validation to allow *optimistic traversal* by letting the deleter mark the node *after* detaching, and *patching up* the potentially unsafe accesses arising from false-negatives by letting the deleter protect such pointers. Thanks to optimistic traversal, data structures with HP++ outperform the same-purpose data structures with HP under contention while consuming a similar amount of memory.
 
 ## API Design
 
@@ -16,7 +16,7 @@ You can check the actual implementation of [Harris's list](https://www.cl.cam.ac
 
 This crate provides two major APIs: `try_protect_pp` and `try_unlink`, corresponding to **TryProtect** and **TryUnlink** in the original paper, respectively.
 
-(`.._pp`, which stands for *plus-plus*, is used in `try_protect_pp` to distinguish with `try_protect` function that provides HP version of protecting.)
+(`.._pp`, which stands for *plus-plus*, is used in `try_protect_pp` to distinguish it with `try_protect` function that provides HP version of protecting.)
 
 ### `try_protect_pp`
 
@@ -60,6 +60,9 @@ It takes 2 arguments:
 
 1. `unlink`: the Trait object which implements `do_unlink` function that performs unlinking and returns the unlinked node(s).
 2. `frontier`: the pointers that the unlinker has to protect for the traversing threads.
+
+The *unlinking frontier* is the set of pointers that are reachable by following a single link from the *to-be-unlinked objects* but
+are not themselves to-be-unlinked. The `frontier` argument to `try_unlink` must be decided ahead of the actual unlinking, and the data structure must guarantee that the frontier does not change once it is decided: otherwise, the traversing thread’s access to a frontier node may not be protected.
 
 Note that the node type `T` implements the `Invalidate` trait, so that unlinked nodes can be later invalidated by the reclaimers.
 
