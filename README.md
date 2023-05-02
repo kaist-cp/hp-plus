@@ -16,7 +16,7 @@ You can check the actual implementation of [Harris's list](https://www.cl.cam.ac
 
 This crate provides two major APIs: `try_protect_pp` and `try_unlink`, corresponding to **TryProtect** and **TryUnlink** in the original paper, respectively.
 
-(`.._pp`, which stands for *plus-plus*, is used in `try_protect_pp` to distinguish it with `try_protect` function that provides HP version of protecting.)
+(`.._pp`, which stands for *plus-plus*, is used in `try_protect_pp` to distinguish it from `try_protect` function that provides HP version of protecting.)
 
 ### `try_protect_pp`
 
