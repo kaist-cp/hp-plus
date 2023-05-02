@@ -68,7 +68,7 @@ impl EpochBarrier {
     pub(crate) fn read(&self) -> usize {
         let mut epoch = self.0.load(Ordering::Acquire);
         loop {
-            membarrier::light_membarrier();
+            membarrier::light();
             let new_epoch = self.0.load(Ordering::Acquire);
             if epoch == new_epoch {
                 return epoch;

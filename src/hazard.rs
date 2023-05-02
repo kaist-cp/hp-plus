@@ -53,7 +53,7 @@ impl<'domain> HazardPointer<'domain> {
     /// For a pointer `p`, if "`src` still pointing to `pointer`" implies that `p` is not retired,
     /// then `Ok(())` means that shields set to `p` are validated.
     pub fn validate<T>(pointer: *mut T, src: &AtomicPtr<T>) -> Result<(), *mut T> {
-        membarrier::light_membarrier();
+        membarrier::light();
         let new = src.load(Ordering::Acquire);
         if pointer == new {
             Ok(())
@@ -94,7 +94,7 @@ impl<'domain> HazardPointer<'domain> {
         F: Fn(&S) -> bool,
     {
         self.protect_raw(ptr);
-        membarrier::light_membarrier();
+        membarrier::light();
         if check_stop(src) {
             return Err(ProtectError::Stopped);
         }
@@ -282,7 +282,7 @@ impl<'domain> Iterator for ThreadHazardArrayIter<'domain> {
             let slot = unsafe { array.get_unchecked(i) };
             let value = slot.load(Ordering::Acquire);
             if !value.is_null() {
-                return Some(value)
+                return Some(value);
             }
         }
         None

@@ -6,7 +6,7 @@ mod thread;
 
 pub use hazard::HazardPointer;
 pub use hazard::ProtectError;
-pub use membarrier::light_membarrier;
+pub use membarrier::light;
 pub use tag::*;
 
 use core::cell::RefCell;
@@ -23,7 +23,7 @@ thread_local! {
 }
 
 pub trait Unlink<T> {
-    fn do_unlink(&self) ->Result<Vec<*mut T>, ()>;
+    fn do_unlink(&self) -> Result<Vec<*mut T>, ()>;
 }
 
 pub trait Invalidate {
@@ -41,23 +41,17 @@ pub unsafe fn retire<T>(ptr: *mut T) {
 
 /// Protects `links` and try unlinking by `do_unlink`. if successful, mark the returned nodes as stopped and
 /// retire them.
-/// 
+///
 /// `do_unlink` tries unlinking, and if successful, it returns raw pointers to unlinked nodes.
 ///
 /// # Safety
 /// * The memory blocks in `to_be_unlinked` are no longer modified.
 /// * TODO
-pub unsafe fn try_unlink<T>(
-    unlink: impl Unlink<T>,
-    frontier: &[*mut T],
-) -> bool
+pub unsafe fn try_unlink<T>(unlink: impl Unlink<T>, frontier: &[*mut T]) -> bool
 where
     T: Invalidate,
 {
-    DEFAULT_THREAD.with(|t| {
-        t.borrow_mut()
-            .try_unlink(unlink, frontier)
-    })
+    DEFAULT_THREAD.with(|t| t.borrow_mut().try_unlink(unlink, frontier))
 }
 
 /// Trigger reclamation
