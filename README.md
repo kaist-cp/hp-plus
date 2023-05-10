@@ -1,6 +1,6 @@
-# HP++: A backward-compatible extension for Hazard Pointers
+# HP++: A Hazard Pointers Extension for Better Applicability
 
-This is an implementation of *HP++*, a safe memory reclamation scheme, which is proposed in
+This is an implementation of *HP++*, a safe memory reclamation scheme proposed in
 
 > Jaehwang Jung, Janggun Lee, Jeonghyeon Kim and Jeehoon Kang, Applying Hazard Pointers to More Concurrent Data Structures, SPAA 2023.
 
@@ -8,7 +8,15 @@ The benchmark suite which evaluates the performance of HP++ can be found at [smr
 
 ## Introduction
 
-**HP++ is a backward-compatible extension for hazard pointers (HP)**, which improve applicability by enabling optimistic traversal. The key idea is *under-approximating* the unreachability in validation to allow *optimistic traversal* by letting the deleter mark the node *after* detaching, and *patching up* the potentially unsafe accesses arising from false-negatives by letting the deleter protect such pointers. Thanks to optimistic traversal, data structures with HP++ outperform the same-purpose data structures with HP under contention while consuming a similar amount of memory.
+**HP++ is a backward-compatible extension for hazard pointers (HP)
+that enables optimistically traversing possibly detached nodes.**
+The key idea is *under-approximating* the unreachability in validation
+to allow optimistic traversal by letting the deleter mark the node *after* detaching, and
+*patching up* the potentially unsafe accesses arising from false-negatives
+by letting the deleter protect such pointers.
+Thanks to optimistic traversal, data structures with HP++
+may outperform same-purpose data structures with HP
+while consuming a similar amount of memory.
 
 ## API Design
 
