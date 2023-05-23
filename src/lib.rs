@@ -6,7 +6,7 @@ mod thread;
 
 pub use hazard::HazardPointer;
 pub use hazard::ProtectError;
-pub use membarrier::light;
+pub use membarrier::light_membarrier;
 pub use tag::*;
 
 use core::cell::RefCell;

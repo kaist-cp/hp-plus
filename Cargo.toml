@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-membarrier = { git = "https://github.com/jeehoonkang/membarrier-rs.git", branch = "pebr" }
+membarrier = { git = "https://github.com/jeehoonkang/membarrier-rs.git", branch = "smr-benchmark" }
 crossbeam-utils = "0.8.14"
 rustc-hash = "1.1.0"
 
