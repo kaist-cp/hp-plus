@@ -88,14 +88,14 @@ impl<'domain> HazardPointer<'domain> {
         ptr: *mut T,
         src: &S,
         src_link: &AtomicPtr<T>,
-        check_stop: &F,
+        is_invalid: &F,
     ) -> Result<(), ProtectError<T>>
     where
         F: Fn(&S) -> bool,
     {
         self.protect_raw(ptr);
         membarrier::light();
-        if check_stop(src) {
+        if is_invalid(src) {
             return Err(ProtectError::Stopped);
         }
         let ptr_new = untagged(src_link.load(Ordering::Acquire));
@@ -110,14 +110,14 @@ impl<'domain> HazardPointer<'domain> {
         &mut self,
         src: &S,
         src_link: &AtomicPtr<T>,
-        check_stop: &F,
+        is_invalid: &F,
     ) -> Result<*mut T, ()>
     where
         F: Fn(&S) -> bool,
     {
         let mut ptr = src_link.load(Ordering::Relaxed);
         loop {
-            match self.try_protect_pp(ptr, src, src_link, check_stop) {
+            match self.try_protect_pp(ptr, src, src_link, is_invalid) {
                 Err(ProtectError::Stopped) => return Err(()),
                 Err(ProtectError::Changed(ptr_new)) => ptr = ptr_new,
                 Ok(_) => return Ok(ptr),
