@@ -71,33 +71,44 @@ impl<'domain> Thread<'domain> {
     where
         T: Invalidate,
     {
-        let hps: Vec<_> = frontier
+        let hps = self.protect_frontier(frontier);
+        if let Ok(unlinkeds) = unlink.do_unlink() {
+            self.schedule_invalidation(hps, unlinkeds);
+            true
+        } else {
+            drop(hps);
+            false
+        }
+    }
+
+    pub fn protect_frontier<T>(&mut self, frontier: &[*mut T]) -> Vec<HazardPointer<'domain>> {
+        frontier
             .iter()
             .map(|&ptr| {
                 let mut hp = HazardPointer::new(self);
                 hp.protect_raw(ptr);
                 hp
             })
-            .collect();
+            .collect()
+    }
 
-        if let Ok(unlinkeds) = unlink.do_unlink() {
-            self.unlinkeds.push(Unlinked::new(unlinkeds, hps));
+    pub fn schedule_invalidation<T: Invalidate>(
+        &mut self,
+        hps: Vec<HazardPointer<'domain>>,
+        unlinkeds: Vec<*mut T>,
+    ) {
+        self.unlinkeds.push(Unlinked::new(unlinkeds, hps));
 
-            let count = self.count.wrapping_add(1);
-            self.count = count;
-            if count % Self::COUNTS_BETWEEN_INVALIDATION == 0 {
-                self.do_invalidation()
-            }
-            if count % Self::COUNTS_BETWEEN_FLUSH == 0 {
-                self.flush_retireds();
-            }
-            if count % Self::COUNTS_BETWEEN_COLLECT == 0 {
-                self.do_reclamation();
-            }
-            true
-        } else {
-            drop(hps);
-            false
+        let count = self.count.wrapping_add(1);
+        self.count = count;
+        if count % Self::COUNTS_BETWEEN_INVALIDATION == 0 {
+            self.do_invalidation()
+        }
+        if count % Self::COUNTS_BETWEEN_FLUSH == 0 {
+            self.flush_retireds();
+        }
+        if count % Self::COUNTS_BETWEEN_COLLECT == 0 {
+            self.do_reclamation();
         }
     }
 
