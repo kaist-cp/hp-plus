@@ -13,7 +13,7 @@ pub struct HazardPointer<'domain> {
 }
 
 pub enum ProtectError<T> {
-    Stopped,
+    Invalidated,
     Changed(*mut T),
 }
 
@@ -96,7 +96,7 @@ impl<'domain> HazardPointer<'domain> {
         self.protect_raw(ptr);
         membarrier::light_membarrier();
         if is_invalid(src) {
-            return Err(ProtectError::Stopped);
+            return Err(ProtectError::Invalidated);
         }
         let ptr_new = untagged(src_link.load(Ordering::Acquire));
         if ptr == ptr_new {
@@ -118,7 +118,7 @@ impl<'domain> HazardPointer<'domain> {
         let mut ptr = src_link.load(Ordering::Relaxed);
         loop {
             match self.try_protect_pp(ptr, src, src_link, is_invalid) {
-                Err(ProtectError::Stopped) => return Err(()),
+                Err(ProtectError::Invalidated) => return Err(()),
                 Err(ProtectError::Changed(ptr_new)) => ptr = ptr_new,
                 Ok(_) => return Ok(ptr),
             }

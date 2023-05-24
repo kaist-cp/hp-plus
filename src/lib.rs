@@ -39,8 +39,8 @@ pub unsafe fn retire<T>(ptr: *mut T) {
     DEFAULT_THREAD.with(|t| t.borrow_mut().retire(ptr))
 }
 
-/// Protects `links` and try unlinking by `do_unlink`. if successful, mark the returned nodes as stopped and
-/// retire them.
+/// Protects `links` and try unlinking by `do_unlink`. if successful, mark the returned nodes as
+/// invalidated and retire them.
 ///
 /// `do_unlink` tries unlinking, and if successful, it returns raw pointers to unlinked nodes.
 ///
