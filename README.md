@@ -34,7 +34,7 @@ pub fn try_protect_pp<T, S, F>(
     ptr: *mut T,
     src: &S,
     src_link: &AtomicPtr<T>,
-    check_stop: &F,
+    is_invalid: &F,
 ) -> Result<(), ProtectError<T>>
 where
     F: Fn(&S) -> bool,
