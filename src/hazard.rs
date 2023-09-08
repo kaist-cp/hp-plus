@@ -125,6 +125,7 @@ impl<'domain> HazardPointer<'domain> {
         }
     }
 
+    // ptr to thread is guaranteed to be same (!Send), so swap only idx.
     #[inline]
     pub fn swap(x: &mut HazardPointer, y: &mut HazardPointer) {
         mem::swap(&mut x.idx, &mut y.idx);

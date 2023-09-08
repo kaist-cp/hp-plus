@@ -182,7 +182,7 @@ where
                     self.prev = self.curr;
                     self.curr = next_base;
                     self.anchor = ptr::null_mut();
-                    mem::swap(&mut self.handle.curr_h, &mut self.handle.prev_h);
+                    HazardPointer::swap(&mut self.handle.curr_h, &mut self.handle.prev_h);
                 } else {
                     break curr_node.key == *key;
                 }
@@ -190,13 +190,13 @@ where
                 if self.anchor.is_null() {
                     self.anchor = self.prev;
                     self.anchor_next = self.curr;
-                    mem::swap(&mut self.handle.anchor_h, &mut self.handle.prev_h);
+                    HazardPointer::swap(&mut self.handle.anchor_h, &mut self.handle.prev_h);
                 } else if self.anchor_next == self.prev {
-                    mem::swap(&mut self.handle.anchor_next_h, &mut self.handle.prev_h);
+                    HazardPointer::swap(&mut self.handle.anchor_next_h, &mut self.handle.prev_h);
                 }
                 self.prev = self.curr;
                 self.curr = next_base;
-                mem::swap(&mut self.handle.prev_h, &mut self.handle.curr_h);
+                HazardPointer::swap(&mut self.handle.prev_h, &mut self.handle.curr_h);
             }
         };
 
