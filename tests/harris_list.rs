@@ -37,6 +37,7 @@ pub struct Handle<'domain> {
     prev_h: HazardPointer<'domain>,
     curr_h: HazardPointer<'domain>,
     anchor_h: HazardPointer<'domain>,
+    anchor_next_h: HazardPointer<'domain>,
 }
 
 impl Default for Handle<'static> {
@@ -45,6 +46,7 @@ impl Default for Handle<'static> {
             prev_h: HazardPointer::default(),
             curr_h: HazardPointer::default(),
             anchor_h: HazardPointer::default(),
+            anchor_next_h: HazardPointer::default(),
         }
     }
 }
@@ -62,6 +64,11 @@ impl<'domain> Handle<'domain> {
 pub struct Cursor<'domain, 'hp, K, V> {
     prev: *mut Node<K, V>,
     curr: *mut Node<K, V>,
+    // Anchor is the last node that was not logically deleted, and anchor_next is anchor's next
+    // node at that moment. These are used for unlinking the chain of logically deleted nodes. They
+    // are non-null iff they exist.
+    anchor: *mut Node<K, V>,
+    anchor_next: *mut Node<K, V>,
     handle: &'hp mut Handle<'domain>,
 }
 
@@ -70,6 +77,8 @@ impl<'domain, 'hp, K, V> Cursor<'domain, 'hp, K, V> {
         Self {
             prev: head as *const _ as *mut _,
             curr: head.load(Ordering::Acquire),
+            anchor: ptr::null_mut(),
+            anchor_next: ptr::null_mut(),
             handle,
         }
     }
@@ -85,16 +94,14 @@ impl<K, V> hp_pp::Invalidate for Node<K, V> {
 /// Physical unlink in the traverse function of Harris's list
 struct HarrisUnlink<'c, 'domain, 'hp, K, V> {
     cursor: &'c Cursor<'domain, 'hp, K, V>,
-    anchor: (*mut Node<K, V>, *mut Node<K, V>),
 }
 
 impl<'r, 'domain, 'hp, K, V> hp_pp::Unlink<Node<K, V>> for HarrisUnlink<'r, 'domain, 'hp, K, V> {
     fn do_unlink(&self) -> Result<Vec<*mut Node<K, V>>, ()> {
-        let (anchor, anchor_next) = self.anchor;
-        if unsafe { &*anchor }
+        if unsafe { &*self.cursor.anchor }
             .next
             .compare_exchange(
-                anchor_next,
+                self.cursor.anchor_next,
                 self.cursor.curr,
                 Ordering::AcqRel,
                 Ordering::Relaxed,
@@ -102,7 +109,7 @@ impl<'r, 'domain, 'hp, K, V> hp_pp::Unlink<Node<K, V>> for HarrisUnlink<'r, 'dom
             .is_ok()
         {
             let mut collected = Vec::with_capacity(16);
-            let mut node = anchor_next;
+            let mut node = self.cursor.anchor_next;
             loop {
                 if untagged(node) == self.cursor.curr {
                     break;
@@ -150,15 +157,6 @@ where
     /// Clean up a chain of logically removed nodes in each traversal.
     #[inline]
     fn try_search(&mut self, key: &K) -> Result<bool, ()> {
-        // An optional variable that contains a value if
-        // and only if `prev` is logically deleted.
-        //
-        // If it is the case, anchor contains a pair of
-        // the last logically undeleted node during traversal
-        // and its next node, which are then used to
-        // unlink a chain of logically deleted nodes.
-        let mut anchor = None;
-
         let found = loop {
             if self.curr.is_null() {
                 break false;
@@ -183,15 +181,18 @@ where
                 if curr_node.key < *key {
                     self.prev = self.curr;
                     self.curr = next_base;
-                    anchor = None;
+                    self.anchor = ptr::null_mut();
                     mem::swap(&mut self.handle.curr_h, &mut self.handle.prev_h);
                 } else {
                     break curr_node.key == *key;
                 }
             } else {
-                if anchor.is_none() {
-                    anchor = Some((self.prev, self.curr));
+                if self.anchor.is_null() {
+                    self.anchor = self.prev;
+                    self.anchor_next = self.curr;
                     mem::swap(&mut self.handle.anchor_h, &mut self.handle.prev_h);
+                } else if self.anchor_next == self.prev {
+                    mem::swap(&mut self.handle.anchor_next_h, &mut self.handle.prev_h);
                 }
                 self.prev = self.curr;
                 self.curr = next_base;
@@ -199,20 +200,16 @@ where
             }
         };
 
-        match anchor {
-            Some((anchor, anchor_next)) => {
-                let unlink = HarrisUnlink {
-                    cursor: &self,
-                    anchor: (anchor, anchor_next),
-                };
-                if unsafe { try_unlink(unlink, slice::from_ref(&self.curr)) } {
-                    self.prev = anchor;
-                    Ok(found)
-                } else {
-                    Err(())
-                }
+        if self.anchor.is_null() {
+            Ok(found)
+        } else {
+            let unlink = HarrisUnlink { cursor: &self };
+            if unsafe { try_unlink(unlink, slice::from_ref(&self.curr)) } {
+                self.prev = self.anchor;
+                Ok(found)
+            } else {
+                Err(())
             }
-            None => Ok(found),
         }
     }
 }
