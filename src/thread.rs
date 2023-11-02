@@ -9,6 +9,32 @@ use crate::retire::{Retired, Unlinked};
 use crate::HazardPointer;
 use crate::{Invalidate, Unlink};
 
+pub static mut COUNTS_BETWEEN_FLUSH: usize = 64;
+
+#[inline]
+pub fn set_counts_between_flush(counts: usize) {
+    assert!(
+        counts >= 2 && counts % 2 == 0,
+        "counts must be even and greater than 1."
+    );
+    unsafe { COUNTS_BETWEEN_FLUSH = counts };
+}
+
+#[inline]
+pub fn counts_between_invalidation() -> usize {
+    unsafe { COUNTS_BETWEEN_FLUSH / 2 }
+}
+
+#[inline]
+pub fn counts_between_flush() -> usize {
+    unsafe { COUNTS_BETWEEN_FLUSH }
+}
+
+#[inline]
+pub fn counts_between_collect() -> usize {
+    unsafe { COUNTS_BETWEEN_FLUSH * 2 }
+}
+
 pub struct Thread<'domain> {
     pub(crate) domain: &'domain Domain,
     pub(crate) hazards: &'domain ThreadRecord,
@@ -41,15 +67,14 @@ impl<'domain> Thread<'domain> {
 
 // stuff related to reclamation
 impl<'domain> Thread<'domain> {
-    const COUNTS_BETWEEN_INVALIDATION: usize = 32;
-    const COUNTS_BETWEEN_FLUSH: usize = 64;
-    const COUNTS_BETWEEN_COLLECT: usize = 128;
-
     fn flush_retireds(&mut self) {
         self.domain
             .num_garbages
             .fetch_add(self.retired.len(), Ordering::AcqRel);
-        self.domain.retireds.push(mem::take(&mut self.retired))
+        self.domain.retireds.push(mem::replace(
+            &mut self.retired,
+            Vec::with_capacity(counts_between_flush()),
+        ))
     }
 
     // NOTE: T: Send not required because we reclaim only locally.
@@ -58,11 +83,11 @@ impl<'domain> Thread<'domain> {
         self.retired.push(Retired::new(ptr));
         let count = self.count.wrapping_add(1);
         self.count = count;
-        if count % Self::COUNTS_BETWEEN_FLUSH == 0 {
+        if count % counts_between_flush() == 0 {
             self.flush_retireds();
         }
         // TODO: collecting right after pushing is kinda weird
-        if count % Self::COUNTS_BETWEEN_COLLECT == 0 {
+        if count % counts_between_collect() == 0 {
             self.do_reclamation();
         }
     }
@@ -101,20 +126,20 @@ impl<'domain> Thread<'domain> {
 
         let count = self.count.wrapping_add(1);
         self.count = count;
-        if count % Self::COUNTS_BETWEEN_INVALIDATION == 0 {
+        if count % counts_between_invalidation() == 0 {
             self.do_invalidation()
         }
-        if count % Self::COUNTS_BETWEEN_FLUSH == 0 {
+        if count % counts_between_flush() == 0 {
             self.flush_retireds();
         }
-        if count % Self::COUNTS_BETWEEN_COLLECT == 0 {
+        if count % counts_between_collect() == 0 {
             self.do_reclamation();
         }
     }
 
     pub(crate) fn do_invalidation(&mut self) {
-        let mut hps = Vec::with_capacity(2 * Self::COUNTS_BETWEEN_INVALIDATION);
-        let mut invalidateds = Vec::with_capacity(2 * Self::COUNTS_BETWEEN_INVALIDATION);
+        let mut hps = Vec::with_capacity(2 * counts_between_invalidation());
+        let mut invalidateds = Vec::with_capacity(2 * counts_between_invalidation());
         for unlinked in self.unlinkeds.drain(..) {
             let (mut ptrs, mut hs) = unlinked.do_invalidation();
             invalidateds.append(&mut ptrs);

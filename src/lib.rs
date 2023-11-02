@@ -8,6 +8,7 @@ pub use hazard::HazardPointer;
 pub use hazard::ProtectError;
 pub use membarrier::light_membarrier;
 pub use tag::*;
+pub use thread::set_counts_between_flush;
 
 use core::cell::RefCell;
 use std::thread_local;
